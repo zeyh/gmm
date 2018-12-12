@@ -1,0 +1,127 @@
+%% Parameters
+
+close all
+
+clear
+
+ndata = 10000;
+
+convergence_tolerance = 1e-3;
+
+PI = 0.25;
+
+mu = [ -2 1];
+
+sig = [0.5 0.3];
+
+
+normaldensity = @(y,mu,sig) 1/sqrt(2*pi*sig ^2)*exp(-0.5*(y-mu).^2/sig^2);
+
+
+%% Generate random data
+
+y = zeros(ndata,1);
+
+
+for i=1:ndata
+
+    whichtype = (rand<PI) + 1;
+
+    y(i) = randn * sig(whichtype) + mu(whichtype);
+
+end
+
+
+%plot it
+
+hist(y,50)
+
+
+ 
+
+ 
+
+%%  Mixture of Gaussians Initialization step
+
+muhat = rand(1,2)*20 - 10;
+
+sighat = rand(1,2)*10;
+
+PIHAT = rand;
+
+
+% muhat = [-1.5 1.5];
+
+% sighat = [0.3 0.55];
+
+% PIHAT = 0.5;
+
+
+ 
+
+%% Do EM
+
+notconverged = true;
+
+while notconverged
+
+    %create copies of the "old values"
+
+    muhat_old = muhat;
+
+    sighat_old = sighat;
+
+    PIHAT_old = PIHAT;
+
+   
+
+    %  Mixture of Gaussians Expectation step
+
+    gammahat_num = PIHAT* normaldensity(y, muhat(2), sighat(2));
+
+    gammahat_den = (1-PIHAT)* normaldensity(y, muhat(1), sighat(1))+gammahat_num;
+
+    gammahat = gammahat_num ./ gammahat_den;
+
+   
+
+    %   Mixture of Gaussians maximization step
+
+   
+
+    sumgamma = sum( gammahat);
+
+    --> muhat(1) = sum( (1-gammahat).*y  ) / (ndata-sumgamma);
+
+    muhat(2) = sum( gammahat.*y) / sumgamma;
+
+    sighat(1) = sum( (1-gammahat) .* (y-muhat(1)).^2) / (ndata-sumgamma);
+
+    sighat(2) = sum( gammahat .* (y-muhat(2)).^2) /  sumgamma ;
+
+   
+
+    sighat = sqrt(sighat);
+
+   
+
+    PIHAT = sumgamma/ndata;
+
+   
+
+    %Use "old" and new values to see if converged...
+
+    difvector_length = sum((muhat-muhat_old).^2) +sum( (sighat-sighat_old).^2) + (PIHAT-PIHAT_old).^2;
+
+   
+
+    if difvector_length < convergence_tolerance
+
+        notconverged = false;
+
+    end
+
+end
+
+
+disp([muhat sighat PIHAT])
